@@ -8,9 +8,9 @@ A cinematic scrollytelling data essay about light pollution and what we gave awa
 
 ## About
 
-*We Forgot the Stars* traces how electric light erased the night sky — city by city, decade by decade. The essay moves through seven sections, from what a pristine Bortle 1 sky looks like to what it would take to get it back.
+*We Forgot the Stars* traces how electric light erased the night sky, city by city, decade by decade. The essay moves through seven sections, from what a pristine Bortle 1 sky looks like to what it would take to get it back.
 
-The visual centrepiece is a per-pixel reprojection of NASA's Black Marble satellite composite — real 2016 measurements of artificial light at night, rendered directly onto a D3 Natural Earth map.
+The visual centrepiece is a per-pixel reprojection of NASA's Black Marble satellite composite, real 2016 measurements of artificial light at night, rendered directly onto a D3 Natural Earth map.
 
 ---
 
