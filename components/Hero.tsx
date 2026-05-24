@@ -53,7 +53,8 @@ export default function Hero() {
         </motion.p>
 
         {/* Main title — large, flush left, spanning the width */}
-        <div className="overflow-hidden pb-[0.4em] -mb-[0.4em]">
+        {/* overflow:hidden clips the slide-up; paddingBottom gives descenders room; negative margin removes the gap */}
+        <div style={{ overflow: "hidden", paddingBottom: "0.55em", marginBottom: "-0.55em" }}>
           <motion.h1
             className="font-cormorant italic text-off-white leading-[0.92] tracking-tight"
             style={{ fontSize: "clamp(3.8rem, 9.5vw, 9rem)" }}
@@ -64,7 +65,7 @@ export default function Hero() {
             We Forgot
           </motion.h1>
         </div>
-        <div className="overflow-hidden pb-[0.4em] -mb-[0.4em]">
+        <div style={{ overflow: "hidden", paddingBottom: "0.55em", marginBottom: "-0.55em" }}>
           <motion.h1
             className="font-cormorant italic text-off-white leading-[0.92] tracking-tight"
             style={{ fontSize: "clamp(3.8rem, 9.5vw, 9rem)" }}
