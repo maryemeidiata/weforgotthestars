@@ -1,12 +1,92 @@
 [
-  { "rank": 1,  "city": "Singapore",    "country": "Singapore",    "bortle": 9,   "brightness": 174.20, "lat":  1.3521, "lng": 103.8198 },
-  { "rank": 2,  "city": "Hong Kong",    "country": "China",        "bortle": 9,   "brightness": 143.50, "lat": 22.3193, "lng": 114.1694 },
-  { "rank": 3,  "city": "Kuwait City",  "country": "Kuwait",       "bortle": 9,   "brightness": 112.70, "lat": 29.3759, "lng":  47.9774 },
-  { "rank": 4,  "city": "Dubai",        "country": "UAE",          "bortle": 9,   "brightness":  98.40, "lat": 25.2048, "lng":  55.2708 },
-  { "rank": 5,  "city": "Seoul",        "country": "South Korea",  "bortle": 9,   "brightness":  87.60, "lat": 37.5665, "lng": 126.9780 },
-  { "rank": 6,  "city": "Tokyo",        "country": "Japan",        "bortle": 9,   "brightness":  76.30, "lat": 35.6762, "lng": 139.6503 },
-  { "rank": 7,  "city": "Shanghai",     "country": "China",        "bortle": 8,   "brightness":  65.10, "lat": 31.2304, "lng": 121.4737 },
-  { "rank": 8,  "city": "Riyadh",       "country": "Saudi Arabia", "bortle": 8,   "brightness":  54.80, "lat": 24.6877, "lng":  46.7219 },
-  { "rank": 9,  "city": "Cairo",        "country": "Egypt",        "bortle": 8,   "brightness":  47.20, "lat": 30.0444, "lng":  31.2357 },
-  { "rank": 10, "city": "London",       "country": "United Kingdom","bortle": 8,  "brightness":  38.90, "lat": 51.5074, "lng":  -0.1278 }
+  {
+    "rank": 1,
+    "city": "Las Vegas",
+    "country": "United States",
+    "bortle": 9,
+    "brightness": 519.49,
+    "lat": 36.1699,
+    "lng": -115.1398
+  },
+  {
+    "rank": 2,
+    "city": "Moscow",
+    "country": "Russia",
+    "bortle": 9,
+    "brightness": 480.79,
+    "lat": 55.7558,
+    "lng": 37.6173
+  },
+  {
+    "rank": 3,
+    "city": "Doha",
+    "country": "Qatar",
+    "bortle": 9,
+    "brightness": 358.0,
+    "lat": 25.2854,
+    "lng": 51.531
+  },
+  {
+    "rank": 4,
+    "city": "Kuwait City",
+    "country": "Kuwait",
+    "bortle": 9,
+    "brightness": 343.68,
+    "lat": 29.3759,
+    "lng": 47.9774
+  },
+  {
+    "rank": 5,
+    "city": "Washington DC",
+    "country": "United States",
+    "bortle": 8,
+    "brightness": 293.98,
+    "lat": 38.9072,
+    "lng": -77.0369
+  },
+  {
+    "rank": 6,
+    "city": "Helsinki",
+    "country": "Finland",
+    "bortle": 8,
+    "brightness": 285.02,
+    "lat": 60.1699,
+    "lng": 24.9384
+  },
+  {
+    "rank": 7,
+    "city": "Dubai",
+    "country": "UAE",
+    "bortle": 8,
+    "brightness": 259.05,
+    "lat": 25.2048,
+    "lng": 55.2708
+  },
+  {
+    "rank": 8,
+    "city": "Chicago",
+    "country": "United States",
+    "bortle": 8,
+    "brightness": 253.0,
+    "lat": 41.8781,
+    "lng": -87.6298
+  },
+  {
+    "rank": 9,
+    "city": "Baghdad",
+    "country": "Iraq",
+    "bortle": 8,
+    "brightness": 239.17,
+    "lat": 33.3152,
+    "lng": 44.3661
+  },
+  {
+    "rank": 10,
+    "city": "Philadelphia",
+    "country": "United States",
+    "bortle": 8,
+    "brightness": 234.09,
+    "lat": 39.9526,
+    "lng": -75.1652
+  }
 ]
