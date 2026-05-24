@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #05040f;
+  --surface: #0d0b1e;
+  --purple-faint: #1a1535;
+  --purple-mid: #4a3f8f;
+  --purple-bright: #7c6fd4;
+  --purple-glow: #a89be8;
+  --lavender: #c9c2f0;
+  --amber-glow: #f5a623;
+  --white: #f0eeff;
+  --text-body: #b8b0d8;
+  --text-muted: #6b6490;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-body);
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Subtle grain texture via SVG filter */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Typography */
+.font-cormorant {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
+
+.font-outfit {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+}
+
+/* ── Scrollytelling layout — full-bleed visual, text overlays right ── */
+.scroll-container {
+  position: relative; /* text overlay uses margin-top trick */
+}
+
+.sticky-visual {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%; /* full bleed */
+  z-index: 0;
+}
+
+.scroll-text {
+  position: relative;
+  z-index: 10;
+  /* Pull up to overlay the sticky visual */
+  margin-top: -100vh;
+  margin-left: auto;
+  width: 42%;
+  padding-left: 3rem;
+  padding-right: 4rem;
+  min-height: calc(100vh + 1px);
+  /* Gradient: visual bleeds in from left, text becomes readable on right */
+  background: linear-gradient(
+    to right,
+    rgba(5, 4, 15, 0)    0%,
+    rgba(5, 4, 15, 0.55) 18%,
+    rgba(5, 4, 15, 0.88) 36%,
+    rgba(5, 4, 15, 0.97) 55%,
+    #05040f              80%
+  );
+}
+
+@media (max-width: 768px) {
+  .scroll-container {
+    display: flex;
+    flex-direction: column;
+  }
+  .sticky-visual {
+    position: relative;
+    height: 60vw;
+    min-height: 300px;
+  }
+  .scroll-text {
+    margin-top: 0;
+    margin-left: 0;
+    width: 100%;
+    background: #05040f;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(13, 11, 30, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(168, 155, 232, 0.1);
+}
+
+/* Stat callout typography */
+.stat-callout {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-style: italic;
+  color: var(--purple-glow);
+  line-height: 1;
+}
+
+/* Transitions */
+.transition-visual {
+  transition: all 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scrollama step spacing */
+.scroll-step {
+  padding: 50vh 0;
+}
+
+.scroll-step:first-child {
+  padding-top: 30vh;
+}
+
+.scroll-step:last-child {
+  padding-bottom: 30vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--purple-mid);
+  border-radius: 2px;
+}

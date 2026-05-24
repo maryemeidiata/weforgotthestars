@@ -1,0 +1,12 @@
+[
+  { "rank": 1, "city": "Singapore", "country": "Singapore", "bortle": 9, "sqm": 12.5, "lat": 1.3521, "lon": 103.8198 },
+  { "rank": 2, "city": "Hong Kong", "country": "China", "bortle": 9, "sqm": 13.0, "lat": 22.3193, "lon": 114.1694 },
+  { "rank": 3, "city": "Kuwait City", "country": "Kuwait", "bortle": 8.5, "sqm": 13.5, "lat": 29.3759, "lon": 47.9774 },
+  { "rank": 4, "city": "Dubai", "country": "UAE", "bortle": 8.5, "sqm": 13.8, "lat": 25.2048, "lon": 55.2708 },
+  { "rank": 5, "city": "Seoul", "country": "South Korea", "bortle": 8, "sqm": 14.0, "lat": 37.5665, "lon": 126.978 },
+  { "rank": 6, "city": "Tokyo", "country": "Japan", "bortle": 8, "sqm": 14.2, "lat": 35.6762, "lon": 139.6503 },
+  { "rank": 7, "city": "Shanghai", "country": "China", "bortle": 8, "sqm": 14.3, "lat": 31.2304, "lon": 121.4737 },
+  { "rank": 8, "city": "Riyadh", "country": "Saudi Arabia", "bortle": 8, "sqm": 14.5, "lat": 24.6877, "lon": 46.7219 },
+  { "rank": 9, "city": "Cairo", "country": "Egypt", "bortle": 8, "sqm": 14.6, "lat": 30.0444, "lon": 31.2357 },
+  { "rank": 10, "city": "London", "country": "UK", "bortle": 8, "sqm": 14.7, "lat": 51.5074, "lon": -0.1278 }
+]

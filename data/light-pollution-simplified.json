@@ -1,0 +1,31 @@
+{
+  "_note": "Placeholder for Falchi World Atlas data. Replace with real GeoTIFF-derived data via Python preprocessing script. Each feature represents a country/region with an approximate mean artificial sky brightness value (mcd/m2). Higher values = more light pollution.",
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "name": "Singapore", "brightness": 9.0, "bortle": 9 }, "geometry": { "type": "Point", "coordinates": [103.8198, 1.3521] } },
+    { "type": "Feature", "properties": { "name": "Hong Kong", "brightness": 8.8, "bortle": 9 }, "geometry": { "type": "Point", "coordinates": [114.1694, 22.3193] } },
+    { "type": "Feature", "properties": { "name": "Netherlands", "brightness": 7.5, "bortle": 8 }, "geometry": { "type": "Point", "coordinates": [5.2913, 52.1326] } },
+    { "type": "Feature", "properties": { "name": "Belgium", "brightness": 7.2, "bortle": 8 }, "geometry": { "type": "Point", "coordinates": [4.4699, 50.5039] } },
+    { "type": "Feature", "properties": { "name": "UK", "brightness": 6.5, "bortle": 7 }, "geometry": { "type": "Point", "coordinates": [-3.4360, 55.3781] } },
+    { "type": "Feature", "properties": { "name": "Germany", "brightness": 6.0, "bortle": 7 }, "geometry": { "type": "Point", "coordinates": [10.4515, 51.1657] } },
+    { "type": "Feature", "properties": { "name": "France", "brightness": 5.5, "bortle": 6 }, "geometry": { "type": "Point", "coordinates": [2.2137, 46.2276] } },
+    { "type": "Feature", "properties": { "name": "Italy", "brightness": 6.0, "bortle": 7 }, "geometry": { "type": "Point", "coordinates": [12.5674, 41.8719] } },
+    { "type": "Feature", "properties": { "name": "Japan", "brightness": 6.5, "bortle": 7 }, "geometry": { "type": "Point", "coordinates": [138.2529, 36.2048] } },
+    { "type": "Feature", "properties": { "name": "South Korea", "brightness": 7.0, "bortle": 8 }, "geometry": { "type": "Point", "coordinates": [127.7669, 35.9078] } },
+    { "type": "Feature", "properties": { "name": "USA (east coast)", "brightness": 6.8, "bortle": 8 }, "geometry": { "type": "Point", "coordinates": [-77.0369, 38.9072] } },
+    { "type": "Feature", "properties": { "name": "USA (midwest)", "brightness": 4.5, "bortle": 5 }, "geometry": { "type": "Point", "coordinates": [-93.0977, 44.9778] } },
+    { "type": "Feature", "properties": { "name": "USA (west)", "brightness": 3.5, "bortle": 4 }, "geometry": { "type": "Point", "coordinates": [-119.4179, 36.7783] } },
+    { "type": "Feature", "properties": { "name": "Canada", "brightness": 2.0, "bortle": 2 }, "geometry": { "type": "Point", "coordinates": [-96.3468, 56.1304] } },
+    { "type": "Feature", "properties": { "name": "Russia", "brightness": 2.5, "bortle": 3 }, "geometry": { "type": "Point", "coordinates": [105.3188, 61.5240] } },
+    { "type": "Feature", "properties": { "name": "Sahara Desert", "brightness": 0.5, "bortle": 1 }, "geometry": { "type": "Point", "coordinates": [17.0, 23.0] } },
+    { "type": "Feature", "properties": { "name": "Amazon", "brightness": 0.3, "bortle": 1 }, "geometry": { "type": "Point", "coordinates": [-60.0, -3.0] } },
+    { "type": "Feature", "properties": { "name": "Australian Outback", "brightness": 0.4, "bortle": 1 }, "geometry": { "type": "Point", "coordinates": [134.0, -25.0] } },
+    { "type": "Feature", "properties": { "name": "Greenland", "brightness": 0.2, "bortle": 1 }, "geometry": { "type": "Point", "coordinates": [-42.0, 72.0] } },
+    { "type": "Feature", "properties": { "name": "Siberia", "brightness": 0.5, "bortle": 1 }, "geometry": { "type": "Point", "coordinates": [115.0, 65.0] } },
+    { "type": "Feature", "properties": { "name": "Brazil", "brightness": 3.0, "bortle": 4 }, "geometry": { "type": "Point", "coordinates": [-51.9253, -14.2350] } },
+    { "type": "Feature", "properties": { "name": "India", "brightness": 5.5, "bortle": 6 }, "geometry": { "type": "Point", "coordinates": [78.9629, 20.5937] } },
+    { "type": "Feature", "properties": { "name": "China", "brightness": 6.0, "bortle": 7 }, "geometry": { "type": "Point", "coordinates": [104.1954, 35.8617] } },
+    { "type": "Feature", "properties": { "name": "Middle East", "brightness": 6.5, "bortle": 7 }, "geometry": { "type": "Point", "coordinates": [45.0, 25.0] } },
+    { "type": "Feature", "properties": { "name": "Sub-Saharan Africa", "brightness": 2.0, "bortle": 2 }, "geometry": { "type": "Point", "coordinates": [20.0, -5.0] } }
+  ]
+}

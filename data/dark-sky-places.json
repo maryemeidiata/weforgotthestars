@@ -1,0 +1,92 @@
+[
+  {
+    "name": "NamibRand Nature Reserve",
+    "country": "Namibia",
+    "lat": -25.1667,
+    "lon": 16.0,
+    "type": "Gold Tier IDA Reserve",
+    "sqm": 22.0,
+    "bortle": 1,
+    "description": "The first IDA International Dark Sky Reserve in Africa. Sky Quality Meter readings above 22 mag/arcsec."
+  },
+  {
+    "name": "Aoraki Mackenzie Reserve",
+    "country": "New Zealand",
+    "lat": -43.9,
+    "lon": 170.45,
+    "type": "Gold Tier IDA Reserve",
+    "sqm": 21.8,
+    "bortle": 1,
+    "description": "New Zealand's first dark sky reserve, centered on Aoraki/Mount Cook National Park."
+  },
+  {
+    "name": "Atacama Desert",
+    "country": "Chile",
+    "lat": -24.5,
+    "lon": -68.5,
+    "type": "Dark Sky Sanctuary",
+    "sqm": 22.3,
+    "bortle": 1,
+    "description": "One of Earth's driest places, home to some of the world's major observatories."
+  },
+  {
+    "name": "Warrumbungle National Park",
+    "country": "Australia",
+    "lat": -31.28,
+    "lon": 149.02,
+    "type": "IDA Dark Sky Park",
+    "sqm": 21.5,
+    "bortle": 2,
+    "description": "Australia's first Dark Sky Park, home to Siding Spring Observatory."
+  },
+  {
+    "name": "Pic du Midi de Bigorre",
+    "country": "France",
+    "lat": 42.9367,
+    "lon": 0.1428,
+    "type": "IDA Dark Sky Reserve",
+    "sqm": 21.7,
+    "bortle": 2,
+    "description": "Historic Pyrenean observatory, a rare dark sky oasis in Western Europe."
+  },
+  {
+    "name": "Cherry Springs State Park",
+    "country": "USA",
+    "lat": 41.6617,
+    "lon": -77.8261,
+    "type": "IDA Dark Sky Park",
+    "sqm": 21.6,
+    "bortle": 2,
+    "description": "Pennsylvania's premier stargazing destination, surrounded by Susquehannock State Forest."
+  },
+  {
+    "name": "Brecon Beacons",
+    "country": "Wales",
+    "lat": 51.9,
+    "lon": -3.44,
+    "type": "IDA Dark Sky Reserve",
+    "sqm": 21.2,
+    "bortle": 3,
+    "description": "The fifth International Dark Sky Reserve in the world and the first in Wales."
+  },
+  {
+    "name": "Exmoor National Park",
+    "country": "UK",
+    "lat": 51.15,
+    "lon": -3.75,
+    "type": "IDA Dark Sky Reserve",
+    "sqm": 21.0,
+    "bortle": 3,
+    "description": "England's first dark sky reserve, on the border of Somerset and Devon."
+  },
+  {
+    "name": "Teide National Park",
+    "country": "Spain (Canary Islands)",
+    "lat": 28.2723,
+    "lon": -16.6422,
+    "type": "Starlight Reserve",
+    "sqm": 21.9,
+    "bortle": 2,
+    "description": "UNESCO World Heritage site with exceptional astronomical conditions."
+  }
+]

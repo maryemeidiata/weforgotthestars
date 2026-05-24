@@ -1,0 +1,22 @@
+[
+  { "city": "Paris", "country": "France", "year": 1878, "lat": 48.8566, "lon": 2.3522 },
+  { "city": "New York", "country": "USA", "year": 1880, "lat": 40.7128, "lon": -74.006 },
+  { "city": "Berlin", "country": "Germany", "year": 1882, "lat": 52.52, "lon": 13.405 },
+  { "city": "Tokyo", "country": "Japan", "year": 1887, "lat": 35.6762, "lon": 139.6503 },
+  { "city": "London", "country": "UK", "year": 1891, "lat": 51.5074, "lon": -0.1278 },
+  { "city": "Chicago", "country": "USA", "year": 1893, "lat": 41.8781, "lon": -87.6298 },
+  { "city": "Vienna", "country": "Austria", "year": 1895, "lat": 48.2082, "lon": 16.3738 },
+  { "city": "Buenos Aires", "country": "Argentina", "year": 1898, "lat": -34.6037, "lon": -58.3816 },
+  { "city": "Sydney", "country": "Australia", "year": 1904, "lat": -33.8688, "lon": 151.2093 },
+  { "city": "Shanghai", "country": "China", "year": 1908, "lat": 31.2304, "lon": 121.4737 },
+  { "city": "Mumbai", "country": "India", "year": 1912, "lat": 19.076, "lon": 72.8777 },
+  { "city": "Cairo", "country": "Egypt", "year": 1914, "lat": 30.0444, "lon": 31.2357 },
+  { "city": "Los Angeles", "country": "USA", "year": 1916, "lat": 34.0522, "lon": -118.2437 },
+  { "city": "Moscow", "country": "Russia", "year": 1920, "lat": 55.7558, "lon": 37.6173 },
+  { "city": "Mexico City", "country": "Mexico", "year": 1925, "lat": 19.4326, "lon": -99.1332 },
+  { "city": "Nairobi", "country": "Kenya", "year": 1930, "lat": -1.2921, "lon": 36.8219 },
+  { "city": "Jakarta", "country": "Indonesia", "year": 1935, "lat": -6.2088, "lon": 106.8456 },
+  { "city": "Lagos", "country": "Nigeria", "year": 1940, "lat": 6.5244, "lon": 3.3792 },
+  { "city": "Seoul", "country": "South Korea", "year": 1945, "lat": 37.5665, "lon": 126.978 },
+  { "city": "Singapore", "country": "Singapore", "year": 1950, "lat": 1.3521, "lon": 103.8198 }
+]
