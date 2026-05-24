@@ -97,7 +97,7 @@ CITIES = [
     ("Nagoya",           "Japan",        136.9066,  35.1815),
     ("Fukuoka",          "Japan",        130.4017,  33.5904),
     ("Pyongyang",        "North Korea",  125.7381,  39.0392),
-    ("Singapore",        "Singapore",    103.8198,   1.3521),
+    ("Singapore",        "Singapore",    103.8513,   1.2847),  # Marina Bay / Raffles Place CBD
     # ── Southeast Asia
     ("Bangkok",          "Thailand",     100.5018,  13.7563),
     ("Manila",           "Philippines",  120.9842,  14.5995),
