@@ -72,8 +72,7 @@ export function generateStars(config: StarFieldConfig): Star[] {
       twinkleSpeed: Math.random() * 0.01 + 0.002,
       twinkleOffset: Math.random() * Math.PI * 2,
       isMilkyWay: true,
-      // Milky Way stars: warm white to golden, not purple
-      color: `rgba(${210 + Math.floor(Math.random() * 45)}, ${195 + Math.floor(Math.random() * 40)}, ${165 + Math.floor(Math.random() * 35)}, 1)`,
+      color: `rgba(${180 + Math.floor(Math.random() * 60)}, ${160 + Math.floor(Math.random() * 60)}, ${220 + Math.floor(Math.random() * 35)}, 1)`,
     });
   }
 
@@ -123,7 +122,7 @@ export function drawStarField(
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
-  // Milky Way — warm amber/brown core, grey-white arms, dark dust rifts. No purple.
+  // Milky Way — layered nebula cloud, not a clean line
   if (bortleLevel < 6) {
     const fade = Math.max(0, (6 - bortleLevel) / 5);
     const bandAngle = Math.PI / 5;
@@ -131,105 +130,78 @@ export function drawStarField(
     const bandCenterY = height * 0.42 + parallaxY * 0.4;
     const bandLength = Math.sqrt(width * width + height * height);
 
-    // --- Step 1: outermost wide halo — cool grey-white star haze ---
     ctx.save();
     ctx.translate(bandCenterX, bandCenterY);
     ctx.rotate(bandAngle);
 
-    const halo = ctx.createLinearGradient(0, -bandLength * 0.42, 0, bandLength * 0.42);
-    halo.addColorStop(0,   `rgba(0,0,0,0)`);
-    halo.addColorStop(0.38,`rgba(155, 160, 175, ${0.06 * fade})`);
-    halo.addColorStop(0.5, `rgba(170, 172, 185, ${0.13 * fade})`);
-    halo.addColorStop(0.62,`rgba(155, 160, 175, ${0.06 * fade})`);
-    halo.addColorStop(1,   `rgba(0,0,0,0)`);
+    // 1. Very wide, faint halo — the outermost diffuse cloud
+    const halo = ctx.createLinearGradient(0, -bandLength * 0.38, 0, bandLength * 0.38);
+    halo.addColorStop(0,    `rgba(0,0,0,0)`);
+    halo.addColorStop(0.35, `rgba(80, 50, 160, ${0.05 * fade})`);
+    halo.addColorStop(0.5,  `rgba(110, 75, 200, ${0.10 * fade})`);
+    halo.addColorStop(0.65, `rgba(80, 50, 160, ${0.05 * fade})`);
+    halo.addColorStop(1,    `rgba(0,0,0,0)`);
     ctx.fillStyle = halo;
-    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.42, bandLength * 5, bandLength * 0.84);
+    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.38, bandLength * 5, bandLength * 0.76);
 
-    // --- Step 2: main band — warm grey/dusty-white ---
-    const band = ctx.createLinearGradient(0, -bandLength * 0.22, 0, bandLength * 0.22);
-    band.addColorStop(0,   `rgba(0,0,0,0)`);
-    band.addColorStop(0.25,`rgba(160, 150, 130, ${0.09 * fade})`);
-    band.addColorStop(0.45,`rgba(190, 178, 155, ${0.20 * fade})`);
-    band.addColorStop(0.5, `rgba(200, 188, 162, ${0.26 * fade})`);
-    band.addColorStop(0.55,`rgba(190, 178, 155, ${0.20 * fade})`);
-    band.addColorStop(0.75,`rgba(160, 150, 130, ${0.09 * fade})`);
-    band.addColorStop(1,   `rgba(0,0,0,0)`);
-    ctx.fillStyle = band;
-    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.22, bandLength * 5, bandLength * 0.44);
+    // 2. Mid band — the main visible nebulosity, with a slight warm/cool shift
+    const midBand = ctx.createLinearGradient(0, -bandLength * 0.18, 0, bandLength * 0.18);
+    midBand.addColorStop(0,    `rgba(0,0,0,0)`);
+    midBand.addColorStop(0.2,  `rgba(100, 70, 190, ${0.08 * fade})`);
+    midBand.addColorStop(0.42, `rgba(160, 120, 255, ${0.20 * fade})`);
+    midBand.addColorStop(0.5,  `rgba(190, 150, 255, ${0.28 * fade})`);
+    midBand.addColorStop(0.58, `rgba(160, 120, 255, ${0.20 * fade})`);
+    midBand.addColorStop(0.8,  `rgba(100, 70, 190, ${0.08 * fade})`);
+    midBand.addColorStop(1,    `rgba(0,0,0,0)`);
+    ctx.fillStyle = midBand;
+    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.18, bandLength * 5, bandLength * 0.36);
 
+    // 3. Galactic centre blob — warm yellow-white bulge off to one side
+    ctx.restore();
+    ctx.save();
+    // Shift the centre blob toward the lower-right (galactic core direction)
+    ctx.translate(bandCenterX + width * 0.12, bandCenterY + height * 0.08);
+    const coreBlob = ctx.createRadialGradient(0, 0, 0, 0, 0, bandLength * 0.18);
+    coreBlob.addColorStop(0,   `rgba(255, 230, 180, ${0.22 * fade})`);
+    coreBlob.addColorStop(0.3, `rgba(220, 180, 255, ${0.14 * fade})`);
+    coreBlob.addColorStop(0.6, `rgba(140, 100, 220, ${0.06 * fade})`);
+    coreBlob.addColorStop(1,   `rgba(0,0,0,0)`);
+    ctx.fillStyle = coreBlob;
+    ctx.beginPath();
+    ctx.arc(0, 0, bandLength * 0.18, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 
-    // --- Step 3: patchy blobs along the band — warm ambers, dusty browns, grey-whites ---
-    // Placed in screen space at staggered positions along the diagonal
-    const patches: Array<{ ox: number; oy: number; r: number; r0: number; g0: number; b0: number; a: number }> = [
-      // Galactic core — bright warm amber-white, largest blob
-      { ox:  0.14, oy:  0.08, r: 0.20, r0: 255, g0: 220, b0: 150, a: 0.38 },
-      // Inner core hot spot
-      { ox:  0.10, oy:  0.05, r: 0.09, r0: 255, g0: 240, b0: 190, a: 0.45 },
-      // Warm brown arm patch upper-left of core
-      { ox: -0.10, oy: -0.05, r: 0.13, r0: 200, g0: 165, b0: 110, a: 0.28 },
-      // Grey-white stellar cloud further upper-left
-      { ox: -0.30, oy: -0.18, r: 0.12, r0: 185, g0: 182, b0: 175, a: 0.22 },
-      // Faint grey wisp further out
-      { ox: -0.52, oy: -0.32, r: 0.09, r0: 160, g0: 158, b0: 155, a: 0.15 },
-      // Dusty cloud far upper-left
-      { ox: -0.70, oy: -0.43, r: 0.07, r0: 145, g0: 140, b0: 130, a: 0.10 },
-      // Secondary warm patch lower-right
-      { ox:  0.36, oy:  0.22, r: 0.11, r0: 210, g0: 180, b0: 130, a: 0.22 },
-      // Grey-white cloud lower-right
-      { ox:  0.55, oy:  0.34, r: 0.09, r0: 175, g0: 172, b0: 168, a: 0.15 },
-      // Faint wisp far lower-right
-      { ox:  0.72, oy:  0.44, r: 0.07, r0: 150, g0: 148, b0: 144, a: 0.09 },
-    ];
-
-    patches.forEach(({ ox, oy, r, r0, g0, b0, a }) => {
-      const px = bandCenterX + ox * width;
-      const py = bandCenterY + oy * height;
-      const radius = r * bandLength;
-      ctx.save();
-      const blob = ctx.createRadialGradient(px, py, 0, px, py, radius);
-      blob.addColorStop(0,   `rgba(${r0},${g0},${b0},${a * fade})`);
-      blob.addColorStop(0.35,`rgba(${r0},${g0},${b0},${a * 0.55 * fade})`);
-      blob.addColorStop(0.7, `rgba(${r0},${g0},${b0},${a * 0.15 * fade})`);
-      blob.addColorStop(1,   `rgba(0,0,0,0)`);
-      ctx.fillStyle = blob;
-      ctx.beginPath();
-      ctx.arc(px, py, radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    });
-
-    // --- Step 4: warm inner spine through the core region ---
     ctx.save();
     ctx.translate(bandCenterX, bandCenterY);
     ctx.rotate(bandAngle);
 
-    const spine = ctx.createLinearGradient(0, -bandLength * 0.052, 0, bandLength * 0.052);
-    spine.addColorStop(0,   `rgba(0,0,0,0)`);
-    spine.addColorStop(0.3, `rgba(220, 195, 145, ${0.16 * fade})`);
-    spine.addColorStop(0.5, `rgba(240, 215, 165, ${0.32 * fade})`);
-    spine.addColorStop(0.7, `rgba(220, 195, 145, ${0.16 * fade})`);
-    spine.addColorStop(1,   `rgba(0,0,0,0)`);
-    ctx.fillStyle = spine;
-    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.052, bandLength * 5, bandLength * 0.104);
+    // 4. Bright core lane — the dense stellar river running through the centre
+    const core = ctx.createLinearGradient(0, -bandLength * 0.055, 0, bandLength * 0.055);
+    core.addColorStop(0,   `rgba(0,0,0,0)`);
+    core.addColorStop(0.3, `rgba(200, 170, 255, ${0.16 * fade})`);
+    core.addColorStop(0.5, `rgba(235, 215, 255, ${0.35 * fade})`);
+    core.addColorStop(0.7, `rgba(200, 170, 255, ${0.16 * fade})`);
+    core.addColorStop(1,   `rgba(0,0,0,0)`);
+    ctx.fillStyle = core;
+    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.055, bandLength * 5, bandLength * 0.11);
 
-    // --- Step 5: dark dust rifts — wide irregular brown-black lanes ---
-    // Primary rift (offset slightly from centre, like in the photo)
-    const rift1 = ctx.createLinearGradient(0, -bandLength * 0.028, 0, bandLength * 0.008);
-    rift1.addColorStop(0,   `rgba(0,0,0,0)`);
-    rift1.addColorStop(0.4, `rgba(8, 4, 2, ${0.28 * fade})`);
-    rift1.addColorStop(0.6, `rgba(12, 6, 2, ${0.35 * fade})`);
-    rift1.addColorStop(1,   `rgba(0,0,0,0)`);
-    ctx.fillStyle = rift1;
-    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.028, bandLength * 5, bandLength * 0.036);
+    // 5. Off-centre secondary arm — makes it look patchy, not symmetric
+    const arm = ctx.createLinearGradient(0, -bandLength * 0.12, 0, bandLength * 0.04);
+    arm.addColorStop(0,   `rgba(0,0,0,0)`);
+    arm.addColorStop(0.4, `rgba(130, 100, 220, ${0.10 * fade})`);
+    arm.addColorStop(0.7, `rgba(160, 130, 240, ${0.16 * fade})`);
+    arm.addColorStop(1,   `rgba(0,0,0,0)`);
+    ctx.fillStyle = arm;
+    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.12, bandLength * 5, bandLength * 0.16);
 
-    // Secondary narrower rift
-    const rift2 = ctx.createLinearGradient(0, bandLength * 0.012, 0, bandLength * 0.028);
-    rift2.addColorStop(0,   `rgba(0,0,0,0)`);
-    rift2.addColorStop(0.5, `rgba(10, 5, 2, ${0.18 * fade})`);
-    rift2.addColorStop(1,   `rgba(0,0,0,0)`);
-    ctx.fillStyle = rift2;
-    ctx.fillRect(-bandLength * 2.5, bandLength * 0.012, bandLength * 5, bandLength * 0.016);
+    // 6. Dust lane — dark rift through the brightest part
+    const dust = ctx.createLinearGradient(0, -bandLength * 0.015, 0, bandLength * 0.015);
+    dust.addColorStop(0,   `rgba(0,0,0,0)`);
+    dust.addColorStop(0.5, `rgba(3, 2, 10, ${0.18 * fade})`);
+    dust.addColorStop(1,   `rgba(0,0,0,0)`);
+    ctx.fillStyle = dust;
+    ctx.fillRect(-bandLength * 2.5, -bandLength * 0.015, bandLength * 5, bandLength * 0.03);
 
     ctx.restore();
   }
