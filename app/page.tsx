@@ -29,6 +29,9 @@ interface WorstOffender {
   city: string;
   country: string;
   bortle: number;
+  brightness: number;
+  lat: number;
+  lng: number;
 }
 
 export default function Home() {

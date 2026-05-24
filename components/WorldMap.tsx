@@ -16,7 +16,7 @@ interface DarkSkyPlace {
 
 interface WorstOffender {
   rank: number; city: string; country: string; bortle: number;
-  sqm: number; lat: number; lon: number;
+  brightness: number; lat: number; lng: number;
 }
 
 type MapMode = "pollution" | "offenders" | "dark-sky";
@@ -67,7 +67,7 @@ export default function WorldMap({ mode, showDarkSkyPlaces = false, activeOffend
   useEffect(() => {
     if (mode !== "offenders" || activeOffenderIndex == null) return;
     const city = (worstOffenders as WorstOffender[])[activeOffenderIndex];
-    if (city) zoomToPoint(city.lon, city.lat, 4);
+    if (city) zoomToPoint(city.lng, city.lat, 4);
   }, [activeOffenderIndex, mode, zoomToPoint]);
 
   useEffect(() => {
@@ -148,7 +148,7 @@ export default function WorldMap({ mode, showDarkSkyPlaces = false, activeOffend
         // ── Worst offender markers ──────────────────────────────────────────
         if (mode === "offenders") {
           (worstOffenders as WorstOffender[]).forEach((city, i) => {
-            const coords = projection([city.lon, city.lat]);
+            const coords = projection([city.lng, city.lat]);
             if (!coords) return;
             const [x, y] = coords;
 
