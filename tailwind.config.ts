@@ -23,7 +23,7 @@ const config: Config = {
       },
       fontFamily: {
         cormorant: ["var(--font-cormorant)", "Georgia", "serif"],
-        outfit: ["var(--font-outfit)", "system-ui", "sans-serif"],
+        outfit: ["var(--font-outfit)", "Georgia", "serif"],
       },
     },
   },

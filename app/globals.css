@@ -29,7 +29,7 @@ html {
 body {
   background-color: var(--bg);
   color: var(--text-body);
-  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-family: var(--font-outfit), Georgia, serif;
   overflow-x: hidden;
 }
 
@@ -50,7 +50,7 @@ body::before {
 }
 
 .font-outfit {
-  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-family: var(--font-outfit), Georgia, serif;
 }
 
 /* ── Scrollytelling layout — full-bleed visual, text overlays right ── */
