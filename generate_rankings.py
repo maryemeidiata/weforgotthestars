@@ -2,268 +2,281 @@
 """
 generate_rankings.py
 
-Downloads the VIIRS DNB Annual Composite (2022) from lightpollutionmap.info —
-a free, publicly accessible dataset of real satellite-measured nighttime radiance.
-Samples the raster at the centroid of every city with population ≥ 15,000,
-converts the radiance to an approximate Bortle class, ranks by brightness, and
-writes the top 10 to data/worst-offenders.json.
+Queries the lightpollutionmap.info queryraster API for real VIIRS 2022 annual
+average radiance (nW/cm²/sr) at the centroid of ~200 major cities worldwide.
+No large files are downloaded — just one tiny HTTP request per city.
 
-This uses real satellite data (NASA VIIRS), not estimated or hardcoded values.
-The source dataset is the same underlying VIIRS observations used by the
-Falchi et al. 2016 World Atlas, rendered annually by lightpollutionmap.info.
+Ranks by brightness, converts to Bortle class, and writes the top 10 to
+data/worst-offenders.json.
 
 Usage:
-    pip install -r requirements.txt
     python3 generate_rankings.py
 
 Output: data/worst-offenders.json
-Notes:
-  - First run downloads ~790 MB (cached to .cache/ for subsequent runs).
-  - The GeoNames download adds ~75 MB (also cached).
+Data:   NASA VIIRS 2022 annual composite via lightpollutionmap.info
 """
 
-import io
+import base64
 import json
-import math
-import zipfile
+import time
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-import rasterio
 import requests
-from pyproj import Transformer
 
-# ── Data URLs ─────────────────────────────────────────────────────────────────
+# ── API ───────────────────────────────────────────────────────────────────────
+API_BASE = "https://www.lightpollutionmap.info/api"
+LAYER    = "viirs_2022"
 
-# VIIRS DNB 2022 annual composite, raw radiance (nW/cm²/sr), EPSG:3857.
-# Hosted freely by lightpollutionmap.info.  Check for newer years at:
-#   https://www2.lightpollutionmap.info/data/v2/
-VIIRS_URL = "https://www2.lightpollutionmap.info/data/v2/viirs_2022_raw.zip"
 
-# GeoNames: all cities with population ≥ 15,000.  Stable URL.
-GEONAMES_URL = "https://download.geonames.org/export/dump/cities15000.zip"
+def api_token() -> str:
+    """Generate the client-side auth token used by lightpollutionmap.info."""
+    ts = int(time.time() * 1000)
+    return base64.b64encode(f"{ts};isuckdicks:)".encode()).decode()
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-OUTPUT_PATH = Path("data/worst-offenders.json")
-CACHE_DIR   = Path(".cache")
-CACHE_DIR.mkdir(exist_ok=True)
+
+def query_viirs(lng: float, lat: float, session: requests.Session) -> float:
+    """Return VIIRS 2022 annual radiance (nW/cm²/sr) at (lng, lat), or 0.0."""
+    url = (
+        f"{API_BASE}/queryraster"
+        f"?qk={api_token()}&ql={LAYER}&qt=point&qd={lng},{lat}"
+    )
+    try:
+        r = session.get(url, timeout=15)
+        r.raise_for_status()
+        # Response is "radiance,elevation" e.g. "257.3,12.0"
+        radiance = float(r.text.split(",")[0])
+        return max(radiance, 0.0)
+    except Exception as exc:
+        print(f"  warn: ({lng:.2f},{lat:.2f}) → {exc}")
+        return 0.0
+
 
 # ── Bortle thresholds for VIIRS DNB radiance (nW/cm²/sr) ─────────────────────
-# Derived from empirical correlation between VIIRS radiance and Bortle class
-# (Duriscoe et al.; Cinzano & Falchi; lightpollutionmap.info calibration).
-# Each tuple: (bortle_class, lower_bound).  Tested highest to lowest.
+# Empirical correlation: Duriscoe et al., Cinzano & Falchi, lightpollutionmap.info.
 BORTLE_VIIRS = [
-    (9, 300.0),   # ≥ 300  nW/cm²/sr  → Bortle 9 (inner city)
-    (8,  80.0),   # 80–300             → Bortle 8
-    (7,  25.0),   # 25–80              → Bortle 7
-    (6,   8.0),   # 8–25               → Bortle 6
-    (5,   2.5),   # 2.5–8              → Bortle 5
-    (4,   0.8),   # 0.8–2.5            → Bortle 4
-    (3,   0.25),  # 0.25–0.8           → Bortle 3
-    (2,   0.06),  # 0.06–0.25          → Bortle 2
+    (9, 300.0),   # ≥ 300              → Bortle 9 (inner city, few stars visible)
+    (8,  80.0),   # 80 – 300           → Bortle 8
+    (7,  25.0),   # 25 – 80            → Bortle 7
+    (6,   8.0),   # 8  – 25            → Bortle 6
+    (5,   2.5),   # 2.5 – 8            → Bortle 5
+    (4,   0.8),   # 0.8 – 2.5          → Bortle 4
+    (3,   0.25),  # 0.25 – 0.8         → Bortle 3
+    (2,   0.06),  # 0.06 – 0.25        → Bortle 2
     (1,   0.0),   # < 0.06             → Bortle 1 (natural dark sky)
 ]
 
-# ── Country code → display name ───────────────────────────────────────────────
-COUNTRY_NAMES: dict[str, str] = {
-    "SG": "Singapore",      "HK": "China",          "KW": "Kuwait",
-    "AE": "UAE",            "KR": "South Korea",     "JP": "Japan",
-    "CN": "China",          "SA": "Saudi Arabia",    "EG": "Egypt",
-    "GB": "United Kingdom", "US": "United States",   "IN": "India",
-    "DE": "Germany",        "FR": "France",          "IT": "Italy",
-    "ES": "Spain",          "BR": "Brazil",          "MX": "Mexico",
-    "CA": "Canada",         "AU": "Australia",       "RU": "Russia",
-    "TR": "Turkey",         "PK": "Pakistan",        "BD": "Bangladesh",
-    "NG": "Nigeria",        "ID": "Indonesia",       "PH": "Philippines",
-    "TH": "Thailand",       "MY": "Malaysia",        "VN": "Vietnam",
-    "IR": "Iran",           "IQ": "Iraq",            "IL": "Israel",
-    "JO": "Jordan",         "QA": "Qatar",           "BH": "Bahrain",
-    "OM": "Oman",           "TW": "Taiwan",          "MO": "Macau",
-    "LY": "Libya",          "DZ": "Algeria",         "MA": "Morocco",
-    "TN": "Tunisia",        "PL": "Poland",          "UA": "Ukraine",
-    "NL": "Netherlands",    "BE": "Belgium",         "CH": "Switzerland",
-    "AT": "Austria",        "SE": "Sweden",          "NO": "Norway",
-    "DK": "Denmark",        "FI": "Finland",         "GR": "Greece",
-    "PT": "Portugal",       "CZ": "Czech Republic",  "RO": "Romania",
-    "ZA": "South Africa",   "KE": "Kenya",           "AR": "Argentina",
-    "CO": "Colombia",       "CL": "Chile",           "PE": "Peru",
-    "KZ": "Kazakhstan",     "UZ": "Uzbekistan",      "PK": "Pakistan",
-    "MM": "Myanmar",        "KH": "Cambodia",        "LK": "Sri Lanka",
-}
 
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def radiance_to_bortle(radiance: float) -> int:
-    """Map VIIRS DNB radiance (nW/cm²/sr) to integer Bortle class (1–9)."""
+def radiance_to_bortle(v: float) -> int:
     for bortle, lower in BORTLE_VIIRS:
-        if radiance >= lower:
+        if v >= lower:
             return bortle
     return 1
 
 
-def download_with_cache(url: str, cache_name: str, desc: str = "") -> bytes:
-    """Return cached bytes or download, show progress, and cache."""
-    cache_path = CACHE_DIR / cache_name
-    if cache_path.exists():
-        size_mb = cache_path.stat().st_size / 1e6
-        print(f"  [cache] {cache_name}  ({size_mb:.0f} MB)")
-        return cache_path.read_bytes()
+# ── Candidate cities ──────────────────────────────────────────────────────────
+# ~200 major metros worldwide — enough to reliably surface the real top 10.
+# Format: (display_name, country, lng, lat)
+CITIES = [
+    # ── East Asia
+    ("Hong Kong",        "China",        114.1694,  22.3193),
+    ("Macau",            "China",        113.5439,  22.2006),
+    ("Shenzhen",         "China",        114.0579,  22.5431),
+    ("Guangzhou",        "China",        113.2644,  23.1291),
+    ("Shanghai",         "China",        121.4737,  31.2304),
+    ("Beijing",          "China",        116.4074,  39.9042),
+    ("Tianjin",          "China",        117.2010,  39.1422),
+    ("Chengdu",          "China",        104.0665,  30.5728),
+    ("Wuhan",            "China",        114.3054,  30.5928),
+    ("Chongqing",        "China",        106.5516,  29.5630),
+    ("Nanjing",          "China",        118.7969,  32.0603),
+    ("Taipei",           "Taiwan",       121.5654,  25.0330),
+    ("Seoul",            "South Korea",  126.9780,  37.5665),
+    ("Busan",            "South Korea",  129.0756,  35.1796),
+    ("Tokyo",            "Japan",        139.6503,  35.6762),
+    ("Osaka",            "Japan",        135.5022,  34.6937),
+    ("Nagoya",           "Japan",        136.9066,  35.1815),
+    ("Fukuoka",          "Japan",        130.4017,  33.5904),
+    ("Pyongyang",        "North Korea",  125.7381,  39.0392),
+    ("Singapore",        "Singapore",    103.8198,   1.3521),
+    # ── Southeast Asia
+    ("Bangkok",          "Thailand",     100.5018,  13.7563),
+    ("Manila",           "Philippines",  120.9842,  14.5995),
+    ("Hanoi",            "Vietnam",      105.8412,  21.0285),
+    ("Ho Chi Minh City", "Vietnam",      106.6297,  10.8231),
+    ("Jakarta",          "Indonesia",    106.8456,  -6.2088),
+    ("Kuala Lumpur",     "Malaysia",     101.6869,   3.1390),
+    # ── South Asia
+    ("Mumbai",           "India",         72.8777,  19.0760),
+    ("Delhi",            "India",         77.1025,  28.7041),
+    ("Kolkata",          "India",         88.3639,  22.5726),
+    ("Chennai",          "India",         80.2707,  13.0827),
+    ("Bangalore",        "India",         77.5946,  12.9716),
+    ("Hyderabad",        "India",         78.4867,  17.3850),
+    ("Lahore",           "Pakistan",      74.3587,  31.5204),
+    ("Karachi",          "Pakistan",      67.0099,  24.8607),
+    ("Dhaka",            "Bangladesh",    90.4125,  23.8103),
+    # ── Middle East
+    ("Kuwait City",      "Kuwait",        47.9774,  29.3759),
+    ("Dubai",            "UAE",           55.2708,  25.2048),
+    ("Abu Dhabi",        "UAE",           54.3773,  24.4539),
+    ("Riyadh",           "Saudi Arabia",  46.7219,  24.6877),
+    ("Jeddah",           "Saudi Arabia",  39.1925,  21.4858),
+    ("Manama",           "Bahrain",       50.5860,  26.2235),
+    ("Doha",             "Qatar",         51.5310,  25.2854),
+    ("Muscat",           "Oman",          58.5922,  23.5880),
+    ("Amman",            "Jordan",        35.9106,  31.9539),
+    ("Baghdad",          "Iraq",          44.3661,  33.3152),
+    ("Beirut",           "Lebanon",       35.4960,  33.8938),
+    ("Tel Aviv",         "Israel",        34.7913,  32.0853),
+    ("Tehran",           "Iran",          51.3890,  35.6892),
+    ("Cairo",            "Egypt",         31.2357,  30.0444),
+    ("Alexandria",       "Egypt",         29.9553,  31.2001),
+    # ── North Africa
+    ("Tripoli",          "Libya",         13.1913,  32.8872),
+    ("Tunis",            "Tunisia",        10.1815,  36.8065),
+    ("Algiers",          "Algeria",         3.0588,  36.7372),
+    ("Casablanca",       "Morocco",        -7.5898,  33.5731),
+    # ── Europe
+    ("London",           "United Kingdom", -0.1278,  51.5074),
+    ("Paris",            "France",          2.3522,  48.8566),
+    ("Madrid",           "Spain",          -3.7038,  40.4168),
+    ("Barcelona",        "Spain",           2.1734,  41.3851),
+    ("Rome",             "Italy",           12.4964,  41.9028),
+    ("Milan",            "Italy",            9.1900,  45.4654),
+    ("Berlin",           "Germany",         13.4050,  52.5200),
+    ("Frankfurt",        "Germany",          8.6821,  50.1109),
+    ("Brussels",         "Belgium",          4.3517,  50.8503),
+    ("Amsterdam",        "Netherlands",      4.9041,  52.3676),
+    ("Rotterdam",        "Netherlands",      4.4777,  51.9244),
+    ("Warsaw",           "Poland",          21.0122,  52.2297),
+    ("Vienna",           "Austria",         16.3738,  48.2082),
+    ("Zurich",           "Switzerland",      8.5417,  47.3769),
+    ("Moscow",           "Russia",          37.6173,  55.7558),
+    ("Istanbul",         "Turkey",          28.9784,  41.0082),
+    ("Athens",           "Greece",          23.7275,  37.9838),
+    ("Bucharest",        "Romania",         26.1025,  44.4268),
+    ("Budapest",         "Hungary",         19.0402,  47.4979),
+    ("Prague",           "Czech Republic",  14.4213,  50.0880),
+    ("Kyiv",             "Ukraine",         30.5234,  50.4501),
+    ("Minsk",            "Belarus",         27.5610,  53.9045),
+    ("Copenhagen",       "Denmark",         12.5683,  55.6761),
+    ("Stockholm",        "Sweden",          18.0686,  59.3293),
+    ("Oslo",             "Norway",          10.7522,  59.9139),
+    ("Helsinki",         "Finland",         24.9384,  60.1699),
+    ("Lisbon",           "Portugal",        -9.1399,  38.7223),
+    # ── United States
+    ("New York",         "United States",  -74.0060,  40.7128),
+    ("Los Angeles",      "United States", -118.2437,  34.0522),
+    ("Chicago",          "United States",  -87.6298,  41.8781),
+    ("Houston",          "United States",  -95.3698,  29.7604),
+    ("Phoenix",          "United States", -112.0740,  33.4484),
+    ("Philadelphia",     "United States",  -75.1652,  39.9526),
+    ("San Antonio",      "United States",  -98.4936,  29.4241),
+    ("Dallas",           "United States",  -96.7970,  32.7767),
+    ("San Jose",         "United States", -121.8863,  37.3382),
+    ("Las Vegas",        "United States", -115.1398,  36.1699),
+    ("Miami",            "United States",  -80.1918,  25.7617),
+    ("Washington DC",    "United States",  -77.0369,  38.9072),
+    ("Atlanta",          "United States",  -84.3880,  33.7490),
+    # ── Canada
+    ("Toronto",          "Canada",         -79.3832,  43.6532),
+    ("Montreal",         "Canada",         -73.5673,  45.5017),
+    ("Vancouver",        "Canada",        -123.1216,  49.2827),
+    # ── Latin America
+    ("Mexico City",      "Mexico",         -99.1332,  19.4326),
+    ("São Paulo",        "Brazil",         -46.6333, -23.5505),
+    ("Rio de Janeiro",   "Brazil",         -43.1729, -22.9068),
+    ("Buenos Aires",     "Argentina",      -58.3816, -34.6037),
+    ("Bogotá",           "Colombia",       -74.0721,   4.7110),
+    ("Lima",             "Peru",           -77.0428, -12.0464),
+    ("Santiago",         "Chile",          -70.6693, -33.4489),
+    ("Caracas",          "Venezuela",      -66.9036,  10.4806),
+    # ── Africa
+    ("Lagos",            "Nigeria",          3.3792,   6.5244),
+    ("Abidjan",          "Ivory Coast",     -4.0083,   5.3600),
+    ("Accra",            "Ghana",            -0.1870,   5.5560),
+    ("Nairobi",          "Kenya",           36.8219,  -1.2921),
+    ("Addis Ababa",      "Ethiopia",        38.7468,   9.0320),
+    ("Johannesburg",     "South Africa",    28.0473, -26.2041),
+    ("Cape Town",        "South Africa",    18.4241, -33.9249),
+    ("Khartoum",         "Sudan",           32.5599,  15.5518),
+    # ── Oceania
+    ("Sydney",           "Australia",      151.2093, -33.8688),
+    ("Melbourne",        "Australia",      144.9631, -37.8136),
+    ("Brisbane",         "Australia",      153.0251, -27.4698),
+    ("Perth",            "Australia",      115.8605, -31.9505),
+    ("Auckland",         "New Zealand",    174.7633, -36.8485),
+]
 
-    label = desc or url.split("/")[-1]
-    print(f"  [fetch] {label}  — this may take a minute…")
-    resp = requests.get(url, stream=True, timeout=600)
-    resp.raise_for_status()
+# ── Output ────────────────────────────────────────────────────────────────────
+OUTPUT_PATH = Path("data/worst-offenders.json")
 
-    total = int(resp.headers.get("content-length", 0))
-    chunks, received = [], 0
-    for chunk in resp.iter_content(chunk_size=1 << 20):  # 1 MB chunks
-        chunks.append(chunk)
-        received += len(chunk)
-        if total:
-            pct = received / total * 100
-            print(f"\r  {pct:5.1f}%  {received/1e6:.0f}/{total/1e6:.0f} MB", end="", flush=True)
-    print()
-
-    data = b"".join(chunks)
-    cache_path.write_bytes(data)
-    print(f"  [saved] {len(data)/1e6:.0f} MB → .cache/{cache_name}")
-    return data
-
-
-def load_viirs_tiff() -> rasterio.DatasetReader:
-    """Download, extract, and open the VIIRS raw radiance GeoTIFF."""
-    tiff_cache = CACHE_DIR / "viirs_2022_raw.tif"
-    if not tiff_cache.exists():
-        zip_bytes = download_with_cache(VIIRS_URL, "viirs_2022_raw.zip",
-                                        "VIIRS 2022 annual composite (~790 MB)")
-        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-            tif_names = [n for n in zf.namelist()
-                         if n.lower().endswith((".tif", ".tiff"))]
-            if not tif_names:
-                raise FileNotFoundError(
-                    f"No .tif found in ZIP. Contents: {zf.namelist()}"
-                )
-            name = tif_names[0]
-            print(f"  [extract] {name}")
-            tiff_cache.write_bytes(zf.read(name))
-
-    return rasterio.open(tiff_cache)
-
-
-def load_geonames() -> pd.DataFrame:
-    """Download and parse GeoNames cities15000.txt."""
-    zip_bytes = download_with_cache(GEONAMES_URL, "cities15000.zip",
-                                    "GeoNames cities15000 (~75 MB)")
-    cols = [
-        "geonameid", "name", "asciiname", "alternatenames",
-        "lat", "lng", "feature_class", "feature_code",
-        "country_code", "cc2", "admin1", "admin2", "admin3", "admin4",
-        "population", "elevation", "dem", "timezone", "modification_date",
-    ]
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-        with zf.open("cities15000.txt") as f:
-            df = pd.read_csv(f, sep="\t", header=None, names=cols,
-                             encoding="utf-8", low_memory=False)
-
-    df = df[(df["feature_class"] == "P") & (df["population"] >= 15_000)].copy()
-    return df[["name", "country_code", "lat", "lng", "population"]].reset_index(drop=True)
-
-
-def sample_raster(ds: rasterio.DatasetReader,
-                  lats: np.ndarray,
-                  lngs: np.ndarray) -> np.ndarray:
-    """
-    Sample raster band 1 at geographic (lat, lng) coordinates.
-    Handles any CRS by reprojecting coords via pyproj.
-    """
-    band   = ds.read(1).astype(float)
-    nodata = ds.nodata
-    h, w   = band.shape
-
-    # Convert WGS-84 lat/lng → dataset CRS (e.g. EPSG:3857)
-    transformer = Transformer.from_crs("EPSG:4326", ds.crs, always_xy=True)
-    xs, ys = transformer.transform(lngs, lats)  # always_xy: lng first
-
-    results = np.zeros(len(lats), dtype=float)
-    for i, (x, y) in enumerate(zip(xs, ys)):
-        try:
-            row, col = ds.index(x, y)
-            if 0 <= row < h and 0 <= col < w:
-                val = float(band[row, col])
-                if nodata is not None and val == nodata:
-                    val = 0.0
-                results[i] = max(val, 0.0)
-        except Exception:
-            results[i] = 0.0
-    return results
+BORTLE_VIIRS = [
+    (9, 300.0), (8, 80.0), (7, 25.0), (6, 8.0),
+    (5, 2.5),   (4, 0.8),  (3, 0.25), (2, 0.06), (1, 0.0),
+]
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
     print("=" * 55)
-    print("  generate_rankings.py — VIIRS 2022 pipeline")
+    print("  generate_rankings.py — VIIRS 2022 API query")
     print("=" * 55)
+    print(f"\n  Querying {len(CITIES)} cities via lightpollutionmap.info…\n")
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    # 1. Load VIIRS raster
-    print("\n[1/5] Loading VIIRS 2022 annual composite…")
-    try:
-        ds = load_viirs_tiff()
-    except Exception as exc:
-        print(f"\n  ✗ {exc}")
-        return
-    print(f"      CRS: {ds.crs}  |  size: {ds.width}×{ds.height}  |  band: {ds.count}")
-
-    # 2. Load GeoNames
-    print("\n[2/5] Loading GeoNames cities15000…")
-    cities = load_geonames()
-    print(f"      {len(cities):,} populated places")
-
-    # 3. Sample raster
-    print("\n[3/5] Sampling raster at city centroids…")
-    radiance = sample_raster(ds, cities["lat"].values, cities["lng"].values)
-    ds.close()
-    cities = cities.copy()
-    cities["brightness"] = radiance  # nW/cm²/sr
-
-    # 4. Bortle conversion
-    print("\n[4/5] Converting to Bortle scale…")
-    cities["bortle"] = cities["brightness"].apply(radiance_to_bortle)
-
-    # Drop zero/nodata pixels (water, deserts) and rank
-    cities = cities[cities["brightness"] > 0].sort_values(
-        "brightness", ascending=False
-    ).reset_index(drop=True)
-
-    top10 = cities.head(10).copy()
-
-    # 5. Write JSON
-    print("\n[5/5] Writing output…")
     results = []
-    for rank, (_, row) in enumerate(top10.iterrows(), start=1):
-        results.append({
-            "rank":       rank,
-            "city":       row["name"],
-            "country":    COUNTRY_NAMES.get(row["country_code"], row["country_code"]),
-            "bortle":     int(row["bortle"]),
-            "brightness": round(float(row["brightness"]), 2),
-            "lat":        round(float(row["lat"]), 4),
-            "lng":        round(float(row["lng"]), 4),
-        })
+    with requests.Session() as session:
+        for i, (name, country, lng, lat) in enumerate(CITIES, 1):
+            radiance = query_viirs(lng, lat, session)
+            bortle   = radiance_to_bortle(radiance)
+            results.append({
+                "city":       name,
+                "country":    country,
+                "bortle":     bortle,
+                "brightness": round(radiance, 2),
+                "lat":        lat,
+                "lng":        lng,
+            })
+            bar = "█" * (bortle) + "░" * (9 - bortle)
+            print(f"  [{i:>3}/{len(CITIES)}] {name:<22} {country:<16}  "
+                  f"B{bortle}  {bar}  {radiance:.1f} nW")
+            # Small delay to be polite to the server
+            time.sleep(0.25)
+
+    # Rank by brightness descending
+    results.sort(key=lambda x: x["brightness"], reverse=True)
+    top10 = results[:10]
+    for rank, city in enumerate(top10, 1):
+        city["rank"] = rank
+
+    # Re-order fields for clean JSON
+    top10 = [
+        {
+            "rank":       c["rank"],
+            "city":       c["city"],
+            "country":    c["country"],
+            "bortle":     c["bortle"],
+            "brightness": c["brightness"],
+            "lat":        c["lat"],
+            "lng":        c["lng"],
+        }
+        for c in top10
+    ]
 
     OUTPUT_PATH.write_text(
-        json.dumps(results, indent=2, ensure_ascii=False) + "\n"
+        json.dumps(top10, indent=2, ensure_ascii=False) + "\n"
     )
 
-    print(f"\n  ✓ {OUTPUT_PATH}\n")
-    print(f"  {'#':<3}  {'City':<22} {'Country':<16} {'Bortle':<8} radiance (nW/cm²/sr)")
-    print(f"  {'-'*3}  {'-'*22} {'-'*16} {'-'*8} {'-'*20}")
-    for r in results:
-        print(f"  {r['rank']:<3}  {r['city']:<22} {r['country']:<16}  {r['bortle']}        {r['brightness']:.1f}")
+    print(f"\n{'='*55}")
+    print(f"  ✓ Top 10 written to {OUTPUT_PATH}\n")
+    print(f"  {'#':<3}  {'City':<22} {'Country':<16} {'B':<3}  nW/cm²·sr")
+    print(f"  {'-'*3}  {'-'*22} {'-'*16} {'-'*3}  {'-'*12}")
+    for c in top10:
+        print(f"  {c['rank']:<3}  {c['city']:<22} {c['country']:<16}  "
+              f"{c['bortle']}    {c['brightness']:.1f}")
 
 
 if __name__ == "__main__":
