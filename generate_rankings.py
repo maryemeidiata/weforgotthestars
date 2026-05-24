@@ -3,10 +3,15 @@
 generate_rankings.py
 
 Queries the lightpollutionmap.info queryraster API for real VIIRS 2022 annual
-average radiance (nW/cm²/sr) at the centroid of ~200 major cities worldwide.
-No large files are downloaded — just one tiny HTTP request per city.
+average radiance (nW/cm²/sr) for ~200 major cities worldwide.
+No large files are downloaded — just small HTTP requests per city.
 
-Ranks by brightness, converts to Bortle class, and writes the top 10 to
+Methodology: for each city we sample a 3×3 grid of points spaced ~5 km apart
+centred on the GeoNames coordinate, then take the maximum value. This removes
+sensitivity to whether the centroid happens to land on a park, harbour, or
+particularly bright block — every city gets the same treatment.
+
+Ranks by peak brightness, converts to Bortle class, writes top 10 to
 data/worst-offenders.json.
 
 Usage:
@@ -27,6 +32,9 @@ import requests
 API_BASE = "https://www.lightpollutionmap.info/api"
 LAYER    = "viirs_2022"
 
+# Grid spacing in degrees (~5 km at mid-latitudes)
+GRID_OFFSET_DEG = 0.045
+
 
 def api_token() -> str:
     """Generate the client-side auth token used by lightpollutionmap.info."""
@@ -43,12 +51,29 @@ def query_viirs(lng: float, lat: float, session: requests.Session) -> float:
     try:
         r = session.get(url, timeout=15)
         r.raise_for_status()
-        # Response is "radiance,elevation" e.g. "257.3,12.0"
         radiance = float(r.text.split(",")[0])
         return max(radiance, 0.0)
     except Exception as exc:
         print(f"  warn: ({lng:.2f},{lat:.2f}) → {exc}")
         return 0.0
+
+
+def city_peak_radiance(lng: float, lat: float, session: requests.Session) -> float:
+    """
+    Sample a 3×3 grid (~5 km spacing) centred on (lng, lat) and return the
+    maximum radiance. This gives every city a fair comparison regardless of
+    where its centroid falls within the urban area.
+    """
+    d = GRID_OFFSET_DEG
+    offsets = [(-d, -d), (0, -d), (d, -d),
+               (-d,  0), (0,  0), (d,  0),
+               (-d,  d), (0,  d), (d,  d)]
+    values = []
+    for dlng, dlat in offsets:
+        v = query_viirs(lng + dlng, lat + dlat, session)
+        values.append(v)
+        time.sleep(0.15)
+    return max(values)
 
 
 # ── Bortle thresholds for VIIRS DNB radiance (nW/cm²/sr) ─────────────────────
@@ -97,7 +122,7 @@ CITIES = [
     ("Nagoya",           "Japan",        136.9066,  35.1815),
     ("Fukuoka",          "Japan",        130.4017,  33.5904),
     ("Pyongyang",        "North Korea",  125.7381,  39.0392),
-    ("Singapore",        "Singapore",    103.8513,   1.2847),  # Marina Bay / Raffles Place CBD
+    ("Singapore",        "Singapore",    103.8198,   1.3521),
     # ── Southeast Asia
     ("Bangkok",          "Thailand",     100.5018,  13.7563),
     ("Manila",           "Philippines",  120.9842,  14.5995),
@@ -223,14 +248,14 @@ def main() -> None:
     print("=" * 55)
     print("  generate_rankings.py — VIIRS 2022 API query")
     print("=" * 55)
-    print(f"\n  Querying {len(CITIES)} cities via lightpollutionmap.info…\n")
+    print(f"\n  Querying {len(CITIES)} cities (3×3 grid per city) via lightpollutionmap.info…\n")
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     results = []
     with requests.Session() as session:
         for i, (name, country, lng, lat) in enumerate(CITIES, 1):
-            radiance = query_viirs(lng, lat, session)
+            radiance = city_peak_radiance(lng, lat, session)
             bortle   = radiance_to_bortle(radiance)
             results.append({
                 "city":       name,
@@ -243,8 +268,6 @@ def main() -> None:
             bar = "█" * (bortle) + "░" * (9 - bortle)
             print(f"  [{i:>3}/{len(CITIES)}] {name:<22} {country:<16}  "
                   f"B{bortle}  {bar}  {radiance:.1f} nW")
-            # Small delay to be polite to the server
-            time.sleep(0.25)
 
     # Rank by brightness descending
     results.sort(key=lambda x: x["brightness"], reverse=True)
